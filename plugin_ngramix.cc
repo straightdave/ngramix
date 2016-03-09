@@ -26,6 +26,14 @@ static int  ngram_token_size;
 
 #define RETURN_IF_ERROR(ret)  if (ret != 0) return ret;
 
+/* treat 0-9, a-zA-Z as letter */
+bool is_letter(char c) {
+  if( (c >= 48 && c<= 57) || (c >= 65 && c<= 90) || (c>= 97 && c <= 122) ) {
+    return true;
+  }
+  return false;
+}
+
 /** Parse a document into ngram.
 @param[in]  param   plugin parser param
 @param[in]  doc   document to parse
@@ -60,15 +68,12 @@ ngram_parse(
 
   n_chars = 0; 
 
-  FILE *fp = fopen("mylog.txt", "a+");
-  fprintf(fp, "== into parsing process ==\n");
-  fprintf(fp, "== we got {%s} to parse ==\n", doc);
-  fprintf(fp, "== doc len {%lu} ==\n", strlen(doc));
+  /* used to add single word (of letters) */
+  int letter_count = 0;
+  char* letter_start = NULL;
 
   while (next < end) {
     char_len = my_mbcharlen_ptr(cs, next, end);
-
-    fprintf(fp, "== char len: {%d} ==\n", char_len);
 
     /* Skip the rest of the doc if invalid char. */
     if (next + char_len > end || char_len == 0) {
@@ -77,41 +82,46 @@ ngram_parse(
 
       /* Skip SPACE */
       if (char_len == 1 && *next == ' ') {
-        fprintf(fp, "== met blank ==\n");
-
         start = next + 1;
         next = start;
         n_chars = 0;
 
         continue;
       }
-      /* len = 1 but not a blank, we treat it as a letter */
-      else if (char_len == 1 && *next != ' ') {
-        fprintf(fp, "== met letter ==\n");
+      else if (char_len == 1 && is_letter(*next)) {
 
-        int temp_char_len = char_len;
-        
-        while(next <= end && temp_char_len == 1 && *next != ' ') {
-          fprintf(fp, "== letter: {%c} ==\n", *next);
-
-          next += temp_char_len;
-          temp_char_len = my_mbcharlen_ptr(cs, next, end);
+        if(letter_start == NULL) {
+          letter_start = next;
         }
-        next -= temp_char_len;
+        letter_count++;
 
-        continue;
+        char_len = my_mbcharlen_ptr(cs, next, end);
+
+        /* if next char is a letter too */
+        if(next + char_len < end && char_len == 1 && is_letter(*(next + char_len))) {
+          next += char_len;
+          continue;
+        }
+        /* if next char is not letter, continue normal code process */
+
+        if(letter_start != NULL && letter_count > 3) {
+          /* add these letters as single word */
+          /* currently 3 is a magic number, need to turn into sys var */
+          
+          bool_info->position = letter_start - doc;
+          ret = param->mysql_add_word(
+            param, letter_start, letter_count, bool_info);
+
+          letter_count = 0;
+          letter_start = NULL;
+        }
       }
-
-      fprintf(fp, "== met normal ==\n");
 
       next += char_len;
       n_chars++;
-
-      fprintf(fp, "==== n_char: {%d} ==\n", n_chars);
     }
 
     if (n_chars == ngram_token_size) {
-      fprintf(fp, "== will add token ==\n");
 
       /* Add a ngram */
       bool_info->position = start - doc;
@@ -125,17 +135,13 @@ ngram_parse(
         start += temp_char_len;
       }
       else {
-        while(start < end && temp_char_len == '1' && *start != ' ') {
+        while(start < end && temp_char_len == 1 && *start != ' ') {
           start += temp_char_len;
           temp_char_len = my_mbcharlen_ptr(cs, start, end);
         }
       }
       
       n_chars = ngram_token_size - 1;
-
-      fprintf(fp, "== added token ==\n");
-      fprintf(fp, "==== n_char: {%d} ==\n", n_chars);
-
       is_first = false;
     }
   }
@@ -159,8 +165,6 @@ ngram_parse(
   default:
     break;
   }
-
-  fclose(fp);
 
   return(ret);
 }
