@@ -1,17 +1,21 @@
-ngramix
-======
-Customized N-gram parser plugin of MySQL for mixed use of ideographic and alphabetic languages
+# ngramix 
+## 简单易用的站点中文全文搜索解决方案
 
-## the main purpose
-MySQL provides a built-in full-text parser for ideographic languages: Ngram, which is simply good enough for fulltext search.
-While using its index to search English/English words embedded phrases, it goes the same way to seperate whole word letter by letter and this is not what I want.   
+```
+ngramix = N-gram + Mix of both ideographic character indexing and normal alphabetic words
+```
 
-So, I need another simple alternative that could parse both Chinese and English words/characters properly.
-This will be (yes, future tense) a simple plugin to MySQL, same as original 'Ngram' plugin.   
+Basically _ngramix_ is a customized N-gram parser plugin of MySQL which is pretty good for simple use of Chinese full-text search at some not-that-big sites.
 
-## the basic ideas
-1. Do the normal N-gram parsing, treat letters as one single word just like one ideographic character
-2. Add such words into fulltext indexes if the length is great than a threshold (users who search may search with single English words)
+## It is simple since
+1. It is simply a MySQL (5.7+) plugin that you can just install and enable it. No other software or applications required to install or configure
+2. It is simply build MySQL full-text indexes. As you know, the bigger web sites however choose more professional solutions like Lucene or other Chinese tokenizer/indexer combinations
+
+But if you run a start-up and small web site, it could be one of the most proper choice.
+
+## features
+- treat one alphabetic word as a token to be indexed, rather than seeing it as combination of letters
+
 
 ## examples
 
@@ -19,4 +23,11 @@ This will be (yes, future tense) a simple plugin to MySQL, same as original 'Ngr
 if Bigram:
 "你好啊dave大帅哥" ==> "你好 好啊 啊dave dave大 大帅 帅哥" and the word "dave"
 ```
+
+## contribution
+
+This is still in process of development/improving.
+
+- Please pull requests for your updates
+- Talk about issues by opening ISSUES
 
