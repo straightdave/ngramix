@@ -1,6 +1,5 @@
 # ngramix 
-## 简单易用的站点中文全文搜索解决方案
-
+## 修改的MySQL N-gram 全文搜索插件，中英文单字区别对待
 ```
 ngramix = N-gram + Mix of both ideographic character indexing and normal alphabetic words
 ```
